@@ -40,7 +40,7 @@ for pairPartOne in currencyCodesArray:
             # pair exchange rate value
             pairExchangeRateValue = pairExchangeRate.json()
 
-            exchangeRate=pairExchangeRateValue['rates'][pairPartTwo]
+            exchangeRate=str(pairExchangeRateValue['rates'][pairPartTwo])
 
             currencyTableEdges.update({pairPartOne+"_"+pairPartTwo:exchangeRate})
 
@@ -84,12 +84,10 @@ def arbit(src):
                 curr = pre[curr]
             path.extend([curr, src])
             joinstring = ' -> '
-            print(path)
             pathwithrate = ["1 "+path[0]]
             pathLength = len(path)
             for i ,baseCurrency in enumerate(path):
                 if i < pathLength-1:
-                    print(baseCurrency, path[i+1], edges[baseCurrency+"_"+path[i+1]])
                     pathwithrate.append(edges[baseCurrency+"_"+path[i+1]]+" "+path[i+1])
 
             print(joinstring.join(pathwithrate))
