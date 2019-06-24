@@ -1,7 +1,58 @@
 import math
-edges =   {"USD_JPY": "88.3656587", "USD_USD": "1.0000000", "JPY_EUR": "0.0086312", "BTC_USD": "123.7747778", "JPY_BTC": "0.0000922", "USD_EUR": "0.6708991", "EUR_USD": "1.2491360", "EUR_JPY": "127.9840248", "JPY_USD": "0.0110954", "BTC_BTC": "1.0000000", "EUR_BTC": "0.0109364", "BTC_JPY": "12670.3554644", "JPY_JPY": "1.0000000", "BTC_EUR": "91.2994188", "EUR_EUR": "1.0000000", "USD_BTC": "0.0071600"}
 
-edge_sets = [set(k.split("_")) for k,v in edges.iteritems()]
+# import requests module
+import requests
+
+# api-endpoint
+URL = 'https://frankfurter.app'
+
+# sending get request and saving the response as response object
+currencies = requests.get(url=URL+'/currencies')
+
+# extracting data in json format
+currenciesObject = currencies.json()
+
+# should contain list of currencies e.g. ['USD', 'BRL' ]
+currencyCodesArray = []
+
+# should contain table with currency pairs and exchange rates e.g. { "USD_JPY": "88.3656587", "USD_USD": "1.0000000",  }
+currencyTableEdges = {}
+
+# populate currency codes list
+for currencyCode, currencyFullName in currenciesObject.items():
+    currencyCodesArray.append(currencyCode)
+
+
+print("Please wait while generating currency pair table ")
+# populate currencyTableEdges
+for pairPartOne in currencyCodesArray:
+    for pairPartTwo in currencyCodesArray:
+        if pairPartOne == pairPartTwo:
+            currencyTableEdges.update({pairPartOne+"_"+pairPartTwo:"1.0"})
+            print(".")
+
+        else:
+            requestURL = URL+'/latest?base='+pairPartOne+'&symbols='+pairPartTwo
+
+            # pair exchange rate request
+            pairExchangeRate = requests.get(url=requestURL)
+
+            # pair exchange rate value
+            pairExchangeRateValue = pairExchangeRate.json()
+
+            exchangeRate=pairExchangeRateValue['rates'][pairPartTwo]
+
+            currencyTableEdges.update({pairPartOne+"_"+pairPartTwo:exchangeRate})
+
+            print(".")
+
+
+print(currencyTableEdges)
+
+
+edges = currencyTableEdges
+
+edge_sets = [set(k.split("_")) for k, v in edges.items()]
 vertices = set.union(*edge_sets)
 
 
@@ -14,8 +65,8 @@ def arbit(src):
     v = len(vertices)
     e = len(edges)
 
-    for i in xrange(v-1):
-        for edge, wt in edges.iteritems():
+    for i in range(v-1):
+        for edge, wt in edges.items():
             wt = -math.log(float(wt))
             u,v = edge.split("_")
             if dist[v] > dist[u] + wt:
@@ -23,18 +74,30 @@ def arbit(src):
                 pre[v] = u
 
 
-    for edge, wt in edges.iteritems():
+    for edge, wt in edges.items():
+
         if dist[u] + (-math.log(float(wt))) < dist[v]:
             curr = src
             path = []
             while curr != v:
                 path.append(curr)
                 curr = pre[curr]
-            path.extend([curr,src])
-            print '->'.join(path)
+            path.extend([curr, src])
+            joinstring = ' -> '
+            print(path)
+            pathwithrate = ["1 "+path[0]]
+            pathLength = len(path)
+            for i ,baseCurrency in enumerate(path):
+                if i < pathLength-1:
+                    print(baseCurrency, path[i+1], edges[baseCurrency+"_"+path[i+1]])
+                    pathwithrate.append(edges[baseCurrency+"_"+path[i+1]]+" "+path[i+1])
+
+            print(joinstring.join(pathwithrate))
+
             return
                 
+while True:
 
-for v in vertices:
-    arbit(v)
+    currency = input(" \nEnter currency symbol e.g. USD :  ")
+    arbit(currency)
 
